@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A Web Coding Interface">
+    <meta name="theme-color" content="#1e1e1e">
+    <meta name="keywords" content="VSC, Web Editor, Open-source, Web code editor">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://github.com/samwelwayne266-coder/polygot-studio/">
+    <meta property="og:title" content="Polygot Studio">
+    <meta property="og:description" content="Advanced Web VSC Interface">
+    <meta property="og:image" content="favicon.png">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <title>Polyglot Studio</title>
+    <style>
+        :root { --bg: #1e1e1e; --side: #252526; --border: #333; --accent: #007acc; }
+        body, html { margin: 0; height: 100%; background: var(--bg); flex-direction: column; color: #ccc; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        
+#layout {
+    display: flex;
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+}
+        
+        #explorer { width: 200px; background: var(--side); border-right: 1px solid var(--border); display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+        .file-item { padding: 8px 15px; cursor: pointer; font-size: 13px; border-left: 2px solid transparent; }
+        .file-item.active { background: #37373d; border-left: 2px solid var(--accent); color: white; }
+
+        #editor-column { flex: 1; display: flex; flex-direction: column; background: var(--bg); position: relative; }
+        
+        #tab-container { display: flex; background: #252526; border-bottom: 1px solid #3c3c3c; min-height: 35px; overflow-x: auto; }
+        .tab { padding: 8px 15px; cursor: pointer; font-size: 12px; display: flex; align-items: center; border-right: 1px solid #333; color: #888; background: #2d2d2d; white-space: nowrap; }
+        .tab.active { background: #1e1e1e; color: white; border-bottom: 1px solid var(--accent); }
+        .close-x { margin-left: 10px; font-size: 14px; opacity: 0.6; }
+        .close-x:hover { opacity: 1; color: #ff5f56; }
+
+        #monaco-container { flex: 1; position: relative; width: 100%; height: 100%; }
+        
+        #welcome-screen { display: none; position: absolute; inset: 0; background: var(--bg); z-index: 10; flex-direction: column; align-items: center; justify-content: center; color: #555; }
+
+        #right-panel { width: 400px; display: flex; flex-direction: column; background: #000; border-left: 1px solid var(--border); }
+        .panel-tabs { display: flex; background: var(--side); border-bottom: 1px solid var(--border); }
+        .panel-tab { padding: 8px 15px; cursor: pointer; font-size: 11px; color: #888; }
+        .panel-tab.active { background: #1e1e1e; color: white; border-bottom: 1px solid var(--accent); }
+        
+        #terminal, #preview-container { flex: 1; overflow: auto; position: relative; }
+        #terminal { padding: 15px; font-family: monospace; color: #0f0; white-space: pre-wrap; font-size: 13px; }
+        #preview-frame { width: 100%; height: 100%; border: none; background: white; display: none; }
+
+@keyframes sync-glow {
+    0% { transform: scale(1); background-color: #f44336; box-shadow: none; }
+    50% { transform: scale(1.5); background-color: #00ff00; box-shadow: 0 0 10px #00ff00; }
+    100% { transform: scale(1); background-color: #f44336; box-shadow: none; }
+}
+
+.sync-active { 
+    animation: sync-glow 0.4s ease-in-out; 
+}
+
+        #find-widget { display: none; position: absolute; top: 40px; right: 20px; background: #333; padding: 10px; border: 1px solid #555; z-index: 1000; box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
+
+#status-bar {
+    height: 22px;
+    width: 100%;
+    background: #1e1e1e;
+    color: #969696;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    font-size: 12px;
+    justify-content: space-between;
+    border-top: 1px solid #333;
+    box-sizing: border-box;
+}
+
+#layout {
+    height: calc(100vh - 22px) !important;
+}
+
+#status-left span {
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+.sidebar-section {
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid #333;
+}
+
+.section-header {
+    padding: 5px 10px;
+    background: #252526;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-transform: uppercase;
+    color: #cccccc;
+}
+
+.section-header:hover {
+    background: #2a2d2e;
+    display: flex;
+}
+
+.section-header.active .chevron {
+    transform: rotate(90deg);
+}
+
+.chevron { 
+    display: inline-block; 
+    width: 10px; 
+    transition: transform 0.1s; 
+}
+
+.section-content {
+    background: #1e1e1e;
+    overflow-y: auto; 
+    overflow-x: hidden;
+    max-height: 450px;
+}
+
+
+.sidebar-section:focus-within {
+    outline: 1px solid #007acc;
+}
+
+.section-content::-webkit-scrollbar { width: 5px; }
+.section-content::-webkit-scrollbar-thumb { background: #333; }
+
+.file-item {
+    cursor: pointer;
+    white-space: nowrap;
+    padding: 2px 5px;
+}
+.file-item:hover { background: #2a2d2e; }
+
+.header-actions span {
+    font-size: 14px;
+    opacity: 0.5;
+}
+
+.header-actions span:hover {
+    opacity: 1;
+    color: #fff;
+}
+    </style>
+</head>
+<body>
+
+<div id="find-widget">
+    <input type="text" id="find-input" placeholder="Find..." style="background:#1e1e1e; color:white; border:1px solid #555; padding:4px;">
+    <button onclick="findNext()" style="background:#007acc; color:white; border:none; padding:4px 8px; cursor:pointer;">Next</button>
+    <button onclick="closeFind()" style="background:none; color:white; border:none; cursor:pointer; margin-left:5px;">X</button>
+</div>
+
+<div id="layout">
+<div id="explorer">
+    <div style="padding: 10px; font-size: 11px; font-weight: bold; color: #888; letter-spacing: 0.5px;">
+        EXPLORER
+    </div>
+
+    <div class="sidebar-section">
+        <div class="section-header active" onclick="toggleSection('folder-content')">
+            <div style="display: flex; align-items: center; gap: 5px; flex: 1; overflow: hidden;">
+                <span class="chevron">❯</span> 
+                <span id="workspace-name" style="font-weight: bold; font-size: 11px;">LOADING...</span>
+            </div>
+            <div class="header-actions" style="display: none; gap: 8px; margin-left: 5px;">
+                <span onclick="createNewFile(event)" title="New File" style="cursor:pointer; opacity: 0.7;">📄⁺</span>
+                <span onclick="createNewFolder(event)" title="New Folder" style="cursor:pointer; opacity: 0.7;">📁⁺</span>
+            </div>
+        </div>
+        <div id="folder-content" class="section-content">
+            <div id="file-list"></div>
+        </div>
+    </div>
+
+    <div class="sidebar-section">
+        <div class="section-header" onclick="toggleSection('outline-content')">
+            <span class="chevron">❯</span> OUTLINE
+        </div>
+        <div id="outline-content" class="section-content" style="display:none;">
+            <div id="outline-list" style="padding: 5px 5px 10px 25px; font-size: 12px; color: #888; line-height: 1.6;"></div>
+        </div>
+    </div>
+
+    <div class="sidebar-section">
+        <div class="section-header" onclick="toggleSection('timeline-content')">
+            <span class="chevron">❯</span> TIMELINE
+        </div>
+        <div id="timeline-content" class="section-content" style="display:none; padding: 10px; font-size: 11px; color: #666;">
+            Local History
+        </div>
+    </div>
+</div>
+    
+    <div id="editor-column">
+        <div id="tab-container">
+            <div id="tabs-list" style="display: flex;"></div>
+        </div>
+        
+        <div id="monaco-container"></div>
+        
+        <div id="welcome-screen">
+            <h2 style="margin:0">Polyglot Studio</h2>
+            <p>Select a file to start editing</p>
+        </div>
+    </div>
+
+    <div id="right-panel">
+        <div class="panel-tabs">
+            <div id="p-tab-terminal" class="panel-tab active" onclick="showPanelTab('terminal')">TERMINAL</div>
+            <div id="p-tab-preview" class="panel-tab" onclick="showPanelTab('preview')">LIVE PREVIEW
+                <span id="sync-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #f44336; margin-left: 8px; display: inline-block; transition: background 0.2s;"></span>
+            </div>
+            <div onclick="detachPreview()" style="margin-left: auto; cursor: pointer; padding: 5px 15px; color: #858585; font-size: 18px;" title="Open in New Tab">⧉</div>
+        </div>
+        <div id="terminal">Ready...</div>
+        <div id="preview-container">
+            <iframe id="preview-frame"></iframe>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+<script>
+let editor;
+let currentFile = '';
+let openedFiles = {}; 
+const syncChannel = new BroadcastChannel('vsc_live_sync');
+let lastHeartbeat = 0;
+
+async function loadExplorer() {
+    try {
+        const res = await fetch('http://localhost:3001/files');
+        const data = await res.json(); 
+        const titleEl = document.getElementById('workspace-name');
+        if (titleEl && data.rootName) {
+            titleEl.innerText = data.rootName.toUpperCase();
+        }
+
+        const list = document.getElementById('file-list');
+        list.innerHTML = '';
+        
+        if (data.files && Array.isArray(data.files)) {
+            renderTree(data.files, list);
+        }
+        
+        updateOutline(); 
+    } catch(e) { 
+        console.error("Sync failed:", e); 
+    }
+}
+
+function renderTree(items, container, indent = 15) {
+    items.forEach(item => {
+        if (!item || !item.name) return;
+
+        const div = document.createElement('div');
+        div.className = 'file-item';
+        div.style.paddingLeft = `${indent}px`;
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+        div.style.gap = '6px';
+
+        if (item.type === 'folder') {
+            div.innerHTML = `<span class="chevron" style="font-size:8px; transition: transform 0.1s;">❯</span> 📁 ${item.name}`;
+            const subContainer = document.createElement('div');
+            subContainer.style.display = 'none';
+            
+            div.onclick = (e) => {
+                e.stopPropagation();
+                const isHidden = subContainer.style.display === 'none';
+                subContainer.style.display = isHidden ? 'block' : 'none';
+                div.querySelector('.chevron').style.transform = isHidden ? 'rotate(90deg)' : 'rotate(0deg)';
+            };
+            
+            container.appendChild(div);
+            if (item.children) renderTree(item.children, subContainer, indent + 12);
+            container.appendChild(subContainer);
+        } else {
+            div.innerHTML = `📄 ${item.name}`;
+            div.onclick = (e) => { 
+                e.stopPropagation(); 
+                openFile(item.name); 
+            };
+            container.appendChild(div);
+        }
+    });
+}
+
+async function openFile(name) {
+    if (currentFile && editor) openedFiles[currentFile] = editor.getValue();
+    currentFile = name;
+
+    if (!openedFiles.hasOwnProperty(name)) {
+        const res = await fetch(`http://localhost:3001/read/${name}`);
+        openedFiles[name] = await res.text();
+    }
+    
+    if (editor) {
+        editor.setValue(openedFiles[name]);
+        const ext = name.split('.').pop();
+        const langMap = { js: 'javascript', html: 'html', css: 'css', py: 'python' };
+        monaco.editor.setModelLanguage(editor.getModel(), langMap[ext] || 'plaintext');
+    }
+
+    if (name.endsWith('.html') || name.endsWith('.css')) showPanelTab('preview');
+    renderTabs();
+    runCode();
+}
+
+async function createNewFile() {
+    const name = prompt("Filename:");
+    if (!name) return;
+    await fetch('http://localhost:3001/create', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ filename: name })
+    });
+    loadExplorer();
+    openFile(name);
+}
+
+async function createNewFolder(event) {
+    event.stopPropagation();
+    const name = prompt("Enter folder name:");
+    if (!name) return;
+    await fetch('http://localhost:3001/mkdir', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ foldername: name })
+    });
+    loadExplorer();
+}
+
+async function runCode() {
+    if (!currentFile || !editor) return;
+    const code = editor.getValue();
+    
+    if (currentFile.endsWith('.html')) {
+        const frame = document.getElementById('preview-frame');
+        if (frame) frame.srcdoc = code; 
+    }
+    
+    syncChannel.postMessage({ type: 'update', html: code });
+
+    try {
+        const res = await fetch('http://localhost:3001/run', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ code, filename: currentFile })
+        });
+        const data = await res.json();
+        document.getElementById('terminal').innerText = data.output;
+    } catch(e) {
+        console.warn("Backend not reachable, preview updated locally.");
+    }
+}
+
+require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' }});
+require(['vs/editor/editor.main'], function() {
+    editor = monaco.editor.create(document.getElementById('monaco-container'), {
+        theme: 'vs-dark', automaticLayout: true, fontSize: 14 
+    });
+
+function updateStatusBar() {
+    if (!editor) return;
+    const pos = editor.getPosition();
+    const model = editor.getModel();
+
+    const posEl = document.getElementById('cursor-pos');
+    if (posEl) posEl.innerText = `Ln ${pos.lineNumber}, Col ${pos.column}`;
+
+    const langEl = document.getElementById('lang-mode');
+    if (langEl && model) langEl.innerText = model.getLanguageId().toUpperCase();
+}
+
+editor.onDidChangeModelContent(() => {
+    const dot = document.getElementById('sync-dot');
+    if (dot) {
+        dot.classList.remove('sync-active');
+        void dot.offsetWidth;
+        dot.classList.add('sync-active');
+    }
+
+    updateStatusBar();
+
+    clearTimeout(window.timer);
+    window.timer = setTimeout(runCode, 500);
+});
+
+editor.onDidChangeCursorPosition(() => updateStatusBar());
+
+    editor.onDidChangeModelContent(() => {
+        clearTimeout(window.timer);
+        window.timer = setTimeout(runCode, 500);
+    });
+
+    editor.onDidChangeCursorPosition(() => {
+        const pos = editor.getPosition();
+        document.getElementById('cursor-pos').innerText = `Ln ${pos.lineNumber}, Col ${pos.column}`;
+    });
+
+    loadExplorer();
+});
+
+function toggleSection(id) {
+    const content = document.getElementById(id);
+    content.style.display = (content.style.display === "none") ? "block" : "none";
+    content.previousElementSibling.classList.toggle('active');
+}
+
+function showPanelTab(type) {
+    document.getElementById('terminal').style.display = type === 'terminal' ? 'block' : 'none';
+    document.getElementById('preview-frame').style.display = type === 'preview' ? 'block' : 'none';
+    document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('p-tab-' + type).classList.add('active');
+}
+
+function renderTabs() {
+    const list = document.getElementById('tabs-list');
+    list.innerHTML = '';
+    Object.keys(openedFiles).forEach(name => {
+        const tab = document.createElement('div');
+        tab.className = `tab ${name === currentFile ? 'active' : ''}`;
+        tab.innerHTML = `${name} <span class="close-x" onclick="closeFile(event, '${name}')">×</span>`;
+        tab.onclick = () => openFile(name);
+        list.appendChild(tab);
+    });
+    if (editor) editor.layout();
+}
+
+function closeFile(event, name) {
+    event.stopPropagation();
+    delete openedFiles[name];
+    if (currentFile === name) {
+        const remaining = Object.keys(openedFiles);
+        if (remaining.length > 0) openFile(remaining[0]);
+        else { currentFile = ''; renderTabs(); }
+    } else { renderTabs(); }
+}
+
+function updateOutline() {
+    if (!editor) return;
+    const code = editor.getValue();
+    const list = document.getElementById('outline-list');
+
+    const regex = /(?:id|class)="([^"]+)"|\.([a-zA-Z0-9_-]+)\s*\{/g;
+    let matches = new Set();
+    let match;
+
+    while ((match = regex.exec(code)) !== null) {
+        matches.add(match[1] || match[2]);
+    }
+
+    if (matches.size === 0) {
+        list.innerHTML = `<div style="padding:10px; color:#666;">No symbols found</div>`;
+        return;
+    }
+
+    list.innerHTML = Array.from(matches).map(m => `
+        <div class="file-item" style="padding: 2px 15px;" onclick="jumpTo('${m}')">
+            <span style="color:#888;">#</span> ${m}
+        </div>
+    `).join('');
+}
+
+function detachPreview() {
+    const code = editor.getValue();
+    const blob = new Blob([code], { type: 'text/html' });
+    const blobUrl = URL.createObjectURL(blob);
+    const newWindow = window.open(blobUrl, '_blank');
+
+    newWindow.onload = () => {
+        const script = newWindow.document.createElement('script');
+        script.text = `
+            const receiver = new BroadcastChannel('vsc_live_sync');
+            receiver.onmessage = (event) => {
+                if (event.data.type === 'update') {
+                    document.open();
+                    document.write(event.data.html);
+                    document.close();
+                }
+            };
+        `;
+        newWindow.document.body.appendChild(script);
+    };
+}
+function findNext() {
+    const query = document.getElementById('find-input').value;
+    if (!query || !editor) return;
+
+    const model = editor.getModel();
+    const matches = model.findMatches(query);
+
+    if (matches.length > 0) {
+        const currentPos = editor.getPosition();
+        const nextMatch = matches.find(m => m.range.startLineNumber > currentPos.lineNumber || 
+                         (m.range.startLineNumber === currentPos.lineNumber && m.range.startColumn > currentPos.column)) 
+                         || matches[0];
+
+        editor.setSelection(nextMatch.range);
+        editor.revealRangeInCenter(nextMatch.range);
+    }
+}
+
+function closeFind() {
+    document.getElementById('find-widget').style.display = 'none';
+}
+
+window.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 'f') {
+        e.preventDefault();
+        document.getElementById('find-widget').style.display = 'block';
+        document.getElementById('find-input').focus();
+    }
+});
+</script>
+
+<div id="status-bar" style="height: 22px; background: #1e1e1e; color: #969696; display: flex; align-items: center; padding: 0 10px; font-size: 12px; justify-content: space-between; position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000; box-sizing: border-box;">
+    <div id="status-left" style="display: flex; align-items: center; gap: 12px;">
+        <div id="status-main">Ready</div>
+        <div style="display: flex; align-items: center; gap: 8px; cursor: pointer;" onclick="showPanelTab('terminal')">
+            <span>ⓧ <span id="error-count">0</span></span>
+            <span>⚠ <span id="warning-count">0</span></span>
+        </div>
+    </div>
+    <div id="status-right">
+        <span id="cursor-pos">Ln 1, Col 1</span> &nbsp; | &nbsp; 
+        <span>Spaces: 4</span> &nbsp; | &nbsp; 
+        <span>UTF-8</span> &nbsp; | &nbsp; 
+        <span id="lang-mode">PLAIN TEXT</span>
+    </div>
+</div>
+</body>
+</html>
