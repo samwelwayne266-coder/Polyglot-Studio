@@ -29,11 +29,46 @@ Experience zero-latency updates with our custom synchronization engine:
 
 
 
-## 🛠️ Installation & Setup
+> [!IMPORTANT]
+> ### [The github page](https://samwelwayne266-coder.github.io/Neural-OS/) is only for display purposes other features may or may not work. Follow the instructions that follow to unlock all features
 
-### 1. Backend Configuration
-Polyglot Studio requires a Node.js backend to handle file operations.
-```bash
-cd backend
+---
+
+### 📥 LOCAL INSTALLATION PROTOCOL
+
+#### **Method A: The Release (Recommended)**
+1. Go to the [Releases](https://github.com/samwelwayne266-coder/neural_os/releases) section on the right side of this page.
+2. Download the latest `Source code (zip)`.
+3. Extract the folder to your desired directory.
+
+#### **Method B: Manual Download**
+1. Click the green **Code** button at the top of this repository.
+2. Select **Download ZIP**.
+3. Extract the contents to your machine.
+
+---
+
+### ⚙️ SYSTEM SETUP
+
+1. **Install Dependencies:**
+   Open your terminal in the extracted folder and run:
+   ```bash
+   npm install
+   ```
+2. Initialize the Vault:
+
+   ```bash
+   npm start / node server.js
+   ```
+
+Establish Connection: You can access the vault:
+
+On the PC: ```Open http://localhost:3000```
+
+On Other Devices (Phones/Tablets): 
+
+   1. Find your Local IP (Type ipconfig in CMD on Windows or ifconfig on Linux). 
+
+   2. Open the browser on your other device and type: http://YOUR_LOCAL_IP:3000 (e.g., http://192.168.1.5:3000).
 npm install
 node server.js
