@@ -2,8 +2,6 @@
 
 **Polyglot Studio** is a lightweight, ultra-responsive web-based code editor featuring multi-tab support, live previewing, and a high-contrast futuristic aesthetic. It is engineered for developers who need a fast, zero-install environment for web experimentation and script testing.
 
-![Polyglot Studio Banner](link-to-your-icon.png)
-
 ## 🌟 Key Features
 
 ### 🧠 Monaco-Powered Intelligence
